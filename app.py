@@ -312,8 +312,8 @@ with tab3:
         mode=WebRtcMode.SENDRECV,
         rtc_configuration=RTC_CONFIG,
         video_processor_factory=RecognizeProcessor,
-        media_stream_constraints={"video": {"width": 640, "height": 480}, "audio": False
-        }
+        media_stream_constraints={"video": {"width": 640, "height": 480}, "audio": False}
+    )
 
     if st.button("🔊 Танылған сөзді дауыстау"):
         if ctx2.video_processor and ctx2.video_processor.last_word:
