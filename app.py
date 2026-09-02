@@ -96,34 +96,49 @@ class RecognizeProcessor:
         self.encoder = None
         self.last_word = None
         self.last_conf = 0.0
+        
+        # Добавляем счетчик кадров и кэш текста
+        self.frame_count = 0
+        self.current_text = "..."
+        
         if os.path.isfile(MODEL_PATH) and os.path.isfile(ENCODER_PATH):
             self.model = joblib.load(MODEL_PATH)
             self.encoder = joblib.load(ENCODER_PATH)
 
     def recv(self, frame):
+        self.frame_count += 1
         img = frame.to_ndarray(format="bgr24")
         img = cv2.flip(img, 1)
-        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        result = self.hands.process(rgb)
+        
+        # ОПТИМИЗАЦИЯ: прогоняем через модель только каждый 3-й кадр
+        if self.frame_count % 3 == 0:
+            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            result = self.hands.process(rgb)
 
-        text = "..."
-        if result.multi_hand_landmarks and self.model is not None:
-            hl = result.multi_hand_landmarks[0]
-            mp_draw.draw_landmarks(img, hl, mp_hands.HAND_CONNECTIONS)
-            feats = np.array([calculate_features(hl.landmark)])
-            probs = self.model.predict_proba(feats)[0]
-            idx = int(np.argmax(probs))
-            conf = float(probs[idx])
-            if conf >= 0.6:
-                word = self.encoder.inverse_transform([idx])[0]
-                text = f"{KAZ_TEXT.get(word, word)}  ({conf*100:.0f}%)"
-                self.last_word = word
-                self.last_conf = conf
-        elif self.model is None:
-            text = "Alдымен modeldi oqytyңыз!"
+            if result.multi_hand_landmarks and self.model is not None:
+                hl = result.multi_hand_landmarks[0]
+                mp_draw.draw_landmarks(img, hl, mp_hands.HAND_CONNECTIONS)
+                feats = np.array([calculate_features(hl.landmark)])
+                probs = self.model.predict_proba(feats)[0]
+                idx = int(np.argmax(probs))
+                conf = float(probs[idx])
+                
+                if conf >= 0.6:
+                    word = self.encoder.inverse_transform([idx])[0]
+                    self.current_text = f"{KAZ_TEXT.get(word, word)}  ({conf*100:.0f}%)"
+                    self.last_word = word
+                    self.last_conf = conf
+                else:
+                    self.current_text = "..."
+            elif self.model is None:
+                self.current_text = "Alдымен modeldi oqytyңыз!"
+            else:
+                self.current_text = "..."
 
+        # Рисуем черную плашку и текст абсолютно на каждом кадре (чтобы не мерцало)
         cv2.rectangle(img, (0, 0), (img.shape[1], 55), (0, 0, 0), -1)
-        cv2.putText(img, text, (15, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2)
+        cv2.putText(img, self.current_text, (15, 38), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2)
+        
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
