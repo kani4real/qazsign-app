@@ -39,6 +39,9 @@ from qazsign_features import calculate_features, DEFAULT_GESTURES, KAZ_TEXT, FEA
 # ---------------------------------------------------------------
 # Жалпы баптаулар
 # ---------------------------------------------------------------
+@st.cache_data
+def load_csv_data(uploaded_file):
+    return pd.read_csv(uploaded_file)
 st.set_page_config(page_title="QazSign", page_icon="🤟", layout="wide")
 
 DATA_PATH = "qazsign_dataset.csv"
@@ -229,7 +232,7 @@ with tab1:
 
     uploaded = st.file_uploader("Немесе бұрын сақталған CSV файлды жүктеу", type="csv")
     if uploaded is not None:
-        df_up = pd.read_csv(uploaded)
+        df_up = load_csv_data(uploaded)  # <--- Міне, осы жерді өзгерттік (@st.cache_data функциясын қолдандық)
         st.session_state.dataset_rows = df_up.values.tolist()
         st.success(f"{len(df_up)} жол жүктелді.")
         st.rerun()
