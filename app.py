@@ -117,7 +117,7 @@ class RecognizeProcessor:
         # неше fps бере алса да, танудың өзін секундына ~4 реттен
         # көп қоспаймыз. Бұл серверге бірдей жүктеме береді.
         self.last_infer_time = 0.0
-        self.infer_interval = 0.25  # секунд (~4 болжам/секунд)
+        self.infer_interval = 0.4  # секунд (~4 болжам/секунд)
 
         if os.path.isfile(MODEL_PATH) and os.path.isfile(ENCODER_PATH):
             self.model = joblib.load(MODEL_PATH)
